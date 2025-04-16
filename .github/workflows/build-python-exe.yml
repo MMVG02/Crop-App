@@ -1,0 +1,47 @@
+name: Build Python EXE with PyInstaller
+
+on:
+  push:
+    branches: [ main ] # Trigger on pushes to the main branch
+    tags:
+      - 'v*' # Or trigger when you push a tag like v1.0, v1.1 etc.
+  release:
+    types: [ created ] # Or trigger when you create a release on GitHub
+
+jobs:
+  build-exe:
+    runs-on: windows-latest # MUST run on Windows to build a .exe
+
+    steps:
+    - name: Check out repository code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11' # Choose a Python version (e.g., 3.9, 3.10, 3.11)
+        # cache: 'pip' # Optional: Cache dependencies for faster builds
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller # Install PyInstaller itself
+
+    - name: Run PyInstaller
+      # This command builds the .exe
+      # --name: The name of your output executable
+      # --onefile: Bundle everything into a single .exe file (convenient but slower startup)
+      # --windowed: Prevents a console window from appearing when the GUI app runs
+      # --noconfirm: Overwrite output directory without asking
+      # multi_crop_app.py: Your main Python script
+      run: pyinstaller --name MultiCropApp --onefile --windowed --noconfirm multi_crop_app.py
+
+    - name: Upload Artifact (EXE)
+      # This takes the generated .exe from the 'dist' folder created by PyInstaller
+      # and makes it available for download from the Actions run page.
+      uses: actions/upload-artifact@v4
+      with:
+        name: MultiCropApp-Windows # Name for the downloadable zip artifact
+        path: dist/MultiCropApp.exe # Path to the single .exe file
+        if-no-files-found: error # Fail if the EXE wasn't created
